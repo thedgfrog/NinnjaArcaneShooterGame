@@ -52,7 +52,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-var WEAPON_SPAWN_RATE = 250L
+val BASE_WEAPON_SPAWN_RATE = 200L
+var WEAPON_SPAWN_RATE = 200L
 
 data class Explosion(val x: Float, val y: Float, val startTime: Long, val color: Color)
 
@@ -184,7 +185,7 @@ fun MainGameScreen(soundManager: SoundManager) {
     LaunchedEffect(game.status, screenWidth, screenHeight) {
         while (game.status == GameStatus.Started) {
             if (screenWidth > 0 && screenHeight > 0) {
-                val x = Random.nextFloat() * (screenWidth - 60f) + 30f
+                val x = Random.nextFloat() * (screenWidth - 200f) + 100f
                 val y = Random.nextFloat() * (screenHeight / 2f) + 50f
                 val type = if (Random.nextBoolean()) BonusType.Heart else BonusType.Speed
                 bonuses.add(Bonus(type, x, y))
@@ -277,11 +278,10 @@ fun MainGameScreen(soundManager: SoundManager) {
                         when(hitBonus.type) {
                             BonusType.Heart -> ninjaHP = (ninjaHP + 1).coerceAtMost(3)
                             BonusType.Speed -> {
-                                val oldRate = WEAPON_SPAWN_RATE
-                                WEAPON_SPAWN_RATE = (WEAPON_SPAWN_RATE / 2).coerceAtLeast(50L)
+                                WEAPON_SPAWN_RATE = (BASE_WEAPON_SPAWN_RATE / 2).coerceAtLeast(50L)
                                 coroutineScope.launch {
                                     delay(5000L)
-                                    WEAPON_SPAWN_RATE = oldRate
+                                    WEAPON_SPAWN_RATE = BASE_WEAPON_SPAWN_RATE
                                 }
                             }
                         }
