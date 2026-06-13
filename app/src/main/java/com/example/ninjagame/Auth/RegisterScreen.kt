@@ -16,7 +16,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.auth.FirebaseAuth
+import com.example.ninjagame.data.FirestoreRepository
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,14 +25,17 @@ fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onBackToLogin: () -> Unit
 ) {
-    val auth = FirebaseAuth.getInstance()
+    val repository = remember { FirestoreRepository() }
+    val scope = rememberCoroutineScope()
 
     var email by remember { mutableStateOf("") }
+    var displayName by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -74,9 +78,28 @@ fun RegisterScreen(
                 Spacer(Modifier.height(48.dp))
 
                 OutlinedTextField(
+                    value = displayName,
+                    onValueChange = { displayName = it },
+                    label = { Text("NINJA NAME", fontSize = 12.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color.White,
+                        unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
+                        focusedLabelColor = Color.White,
+                        unfocusedLabelColor = Color.Gray
+                    )
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("EMAIL", fontSize = 12.sp) },
+                    label = { Text("EMAIL (GMAIL)", fontSize = 12.sp) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
@@ -144,14 +167,14 @@ fun RegisterScreen(
 
                 if (error.isNotEmpty()) {
                     Spacer(Modifier.height(16.dp))
-                    Text(error, color = Color.Red, fontSize = 12.sp)
+                    Text(error, color = if (error.contains("sent")) Color.Green else Color.Red, fontSize = 12.sp)
                 }
 
                 Spacer(Modifier.height(32.dp))
 
                 Button(
                     onClick = {
-                        if (email.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
+                        if (email.isBlank() || password.isBlank() || confirmPassword.isBlank() || displayName.isBlank()) {
                             error = "Please fill all fields"
                             return@Button
                         }
@@ -163,17 +186,29 @@ fun RegisterScreen(
                             error = "Password should be at least 6 characters"
                             return@Button
                         }
-                        auth.createUserWithEmailAndPassword(email, password)
-                            .addOnCompleteListener {
-                                if (it.isSuccessful) onRegisterSuccess()
-                                else error = it.exception?.message ?: "Register failed"
+                        
+                        scope.launch {
+                            isLoading = true
+                            val success = repository.registerUserWithGmail(email, password, displayName)
+                            if (success) {
+                                error = "Verification email sent! Please check your Gmail."
+                                // Có thể delay 1 chút rồi quay về login
+                            } else {
+                                error = "Registration failed. Try again."
                             }
+                            isLoading = false
+                        }
                     },
+                    enabled = !isLoading,
                     modifier = Modifier.fillMaxWidth().height(56.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black)
                 ) {
-                    Text("REGISTER", fontWeight = FontWeight.Bold)
+                    if (isLoading) {
+                        CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("REGISTER", fontWeight = FontWeight.Bold)
+                    }
                 }
             }
             

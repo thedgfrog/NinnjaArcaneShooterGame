@@ -1,0 +1,72 @@
+// Use dbdiagram.io to visualize this file
+
+// --- Enums ---
+
+Enum difficulty_level {
+  EASY
+  MEDIUM
+  HARD
+}
+
+Enum announcement_type {
+  INFO
+  RECORD
+  STORE
+}
+
+// --- Collections (Firebase Firestore) ---
+
+Table profiles {
+  userId string [pk, note: "Firebase Auth UID"]
+  displayName string [not null]
+  profileImage string [note: "Base64 encoded string"]
+  coins long [default: 0]
+  unlockedWeapons string[] [note: "Array of Weapon IDs"]
+  currentWeaponId string [default: "default_kunai"]
+  bestEasyTime long [default: 0]
+  bestMediumTime long [default: 0]
+  bestHardTime long [default: 0]
+
+  note: "Stores user progression and preferences"
+}
+
+Table user_settings {
+  userId string [pk]
+  musicVolume float [default: 0.5]
+  sfxVolume float [default: 0.8]
+  vibrationEnabled boolean [default: true]
+
+  note: "Nested in profiles collection as 'settings' field"
+}
+
+Table game_sessions {
+  sessionId string [pk]
+  userId string [ref: > profiles.userId]
+  survivalTime long [not null]
+  coinsEarned int [not null]
+  difficulty difficulty_level [not null]
+  createdAt timestamp [default: `now()`]
+
+  note: "Logs every game played for analytics and leaderboard history"
+}
+
+Table announcements {
+  id string [pk]
+  message string [not null]
+  type announcement_type [not null]
+  createdAt timestamp [default: `now()`]
+
+  note: "Global feed for records and chat signals"
+}
+
+Table configs {
+  configId string [pk, note: "emojis or quick_chat"]
+  data json [not null]
+
+  note: "Remote configuration for dynamic content"
+}
+
+// --- Relationships ---
+
+Ref: profiles.userId - user_settings.userId [delete: cascade]
+Ref: game_sessions.userId > profiles.userId

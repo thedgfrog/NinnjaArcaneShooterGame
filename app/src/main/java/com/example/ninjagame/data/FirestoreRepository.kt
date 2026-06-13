@@ -6,6 +6,7 @@ import com.example.ninjagame.game.domain.GameSession
 import com.example.ninjagame.game.domain.UserProfile
 import com.example.ninjagame.game.domain.UserSettings
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -329,6 +330,100 @@ class FirestoreRepository {
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
+        }
+    }
+
+    // --- THỰC HIỆN ĐĂNG KÝ & GMAIL (GOOGLE AUTH) ---
+
+    /**
+     * Xử lý đăng ký tài khoản mới và gửi Email xác thực (Gmail)
+     */
+    suspend fun registerUserWithGmail(email: String, pass: String, displayName: String): Boolean {
+        return try {
+            val result = auth.createUserWithEmailAndPassword(email, pass).await()
+            val user = result.user ?: return false
+
+            // 1. Gửi Email xác thực (Gmail verification)
+            user.sendEmailVerification().await()
+
+            // 2. Cập nhật Display Name trong Firebase Auth
+            val profileUpdates = UserProfileChangeRequest.Builder()
+                .setDisplayName(displayName)
+                .build()
+            user.updateProfile(profileUpdates).await()
+
+            // 3. Khởi tạo Profile trên Firestore
+            val profileRef = firestore.collection("profiles").document(user.uid)
+            val initialData = mapOf(
+                "displayName" to displayName,
+                "coins" to 200L, // Tặng quà khởi đầu 200 coins
+                "unlockedWeapons" to listOf("default_kunai"),
+                "currentWeaponId" to "default_kunai",
+                "bestEasyTime" to 0L,
+                "bestMediumTime" to 0L,
+                "bestHardTime" to 0L,
+                "settings" to mapOf(
+                    "musicVolume" to 0.5f,
+                    "sfxVolume" to 0.8f,
+                    "vibrationEnabled" to true
+                )
+            )
+            profileRef.set(initialData).await()
+
+            postAnnouncement("{ninja} Chào mừng $displayName đã gia nhập clan! Hãy kiểm tra Gmail để xác thực tài khoản. {fire}", "INFO")
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    /**
+     * Đồng bộ hóa Profile sau khi đăng nhập bằng Google (Gmail)
+     */
+    suspend fun syncGoogleSignIn(): Boolean {
+        val user = auth.currentUser ?: return false
+        val profileRef = firestore.collection("profiles").document(user.uid)
+        
+        return try {
+            val snapshot = profileRef.get().await()
+            if (!snapshot.exists()) {
+                val data = mapOf(
+                    "displayName" to (user.displayName ?: "Ninja"),
+                    "profileImage" to user.photoUrl?.toString(),
+                    "coins" to 200L,
+                    "unlockedWeapons" to listOf("default_kunai"),
+                    "currentWeaponId" to "default_kunai",
+                    "bestEasyTime" to 0L,
+                    "bestMediumTime" to 0L,
+                    "bestHardTime" to 0L,
+                    "settings" to mapOf(
+                        "musicVolume" to 0.5f,
+                        "sfxVolume" to 0.8f,
+                        "vibrationEnabled" to true
+                    )
+                )
+                profileRef.set(data).await()
+                postAnnouncement("{medal} Ninja ${user.displayName} đã kết nối thành công bằng Google! {star}", "INFO")
+            }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Đăng ký tham gia một sự kiện (Event) đặc biệt
+     */
+    suspend fun registerForEvent(eventId: String): Boolean {
+        val userId = auth.currentUser?.uid ?: return false
+        return try {
+            firestore.collection("events").document(eventId)
+                .update("participants", FieldValue.arrayUnion(userId))
+                .await()
+            true
+        } catch (e: Exception) {
+            false
         }
     }
 }
