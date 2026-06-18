@@ -1,0 +1,142 @@
+// NinjaGame - Class Structure Analysis
+
+// --- Domain Models ---
+
+Class UserProfile {
+  +userId: String
+  +displayName: String
+  +profileImage: String?
+  +coins: Long
+  +unlockedWeapons: List<String>
+  +currentWeaponId: String
+  +bestTimes: Map<String, Long>
+  +settings: UserSettings
+}
+
+Class UserSettings {
+  +musicVolume: Float
+  +sfxVolume: Float
+  +vibrationEnabled: Boolean
+}
+
+Class Announcement {
+  +id: String
+  +message: String
+  +type: String
+  +createdAt: Timestamp
+}
+
+Class GameSession {
+  +sessionId: String
+  +userId: String
+  +survivalTime: Long
+  +coinsEarned: Int
+  +createdAt: Timestamp
+  +difficulty: String
+}
+
+Class StoreItem {
+  +id: String
+  +name: String
+  +price: Int
+  +drawableRes: Int
+}
+
+// --- Game Logic ---
+
+Class Game {
+  +status: GameStatus
+  +score: Int
+  +setting: GameSettings
+}
+
+Interface Target {
+  +x: Float
+  +y: Animatable
+  +radius: Float
+  +fallingSpeed: Float
+  +color: Color
+}
+
+Class EasyTarget <<Target>> {
+  +lives: Int = 1
+}
+
+Class MediumTarget <<Target>> {
+  +lives: Int = 2
+}
+
+Class StrongTarget <<Target>> {
+  +lives: Int = 3
+}
+
+Class Weapon {
+  +x: Float
+  +y: Float
+  +radius: Float
+  +shootingSpeed: Float
+}
+
+Class Bonus {
+  +type: BonusType
+  +x: Float
+  +y: Float
+  +radius: Float
+}
+
+// --- Services & Data ---
+
+Class FirestoreRepository {
+  -firestore: FirebaseFirestore
+  -auth: FirebaseAuth
+  +saveGameSession(time, coins, diff): void
+  +getOrCreateProfile(): UserProfile?
+  +buyItem(itemId, price): Boolean
+  +useWeapon(itemId): Boolean
+  +updateSettings(settings): Boolean
+  +getLeaderboard(): List<UserProfile>
+  +postAnnouncement(msg, type): void
+  +getAnnouncements(): Flow<List<Announcement>>
+}
+
+Class SoundManager {
+  -soundPool: SoundPool
+  -bgmMenuPlayer: MediaPlayer
+  -bgmGamePlayer: MediaPlayer
+  +playThrow(): void
+  +playExplode(): void
+  +startGameMusic(): void
+  +stopGameMusic(): void
+}
+
+// --- UI Components ---
+
+Class GameRoot <<Composable>> {
+  +auth: FirebaseAuth
+}
+
+Class MainGameScreen <<Composable>> {
+  +game: Game
+  +weapons: MutableList<Weapon>
+  +targets: MutableList<Target>
+}
+
+// --- Relationships ---
+
+UserProfile *-- UserSettings
+Game o-- GameStatus
+Target <|-- EasyTarget
+Target <|-- MediumTarget
+Target <|-- StrongTarget
+MainGameScreen --> FirestoreRepository
+MainGameScreen --> SoundManager
+MainGameScreen --> Game
+MainGameScreen --> Weapon
+MainGameScreen --> Target
+MainGameScreen --> Bonus
+StoreScreen --> FirestoreRepository
+ProfileScreen --> FirestoreRepository
+LeaderboardScreen --> FirestoreRepository
+SettingScreen --> SoundManager
+GameRoot --> Game1App
+GameRoot --> AuthScreen

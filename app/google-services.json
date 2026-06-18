@@ -12,7 +12,28 @@
           "package_name": "com.example.ninjagame"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "714915977702-9v47slhkmnaokfedqt19v3bsrs2u4id3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ninjagame",
+            "certificate_hash": "ff79e95370dd6b5f7824b82a12e5bc6c610e221a"
+          }
+        },
+        {
+          "client_id": "714915977702-avlr3dkaepb2haj3566ht4v5j1bu6pv3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.ninjagame",
+            "certificate_hash": "21bc92db38c5114170229a44e523d687f6266eb7"
+          }
+        },
+        {
+          "client_id": "714915977702-8j80vglknpifvtddsmlcljhc278d3aqm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDVqTugE342l4vxU0p7ju7j6a_EDbY990o"
@@ -20,7 +41,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "714915977702-8j80vglknpifvtddsmlcljhc278d3aqm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
